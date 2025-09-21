@@ -1,0 +1,210 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Enhanced Variables */
+:root {
+  --glass-bg-light: rgba(255, 255, 255, 0.1);
+  --glass-bg-dark: rgba(0, 0, 0, 0.1);
+  --glass-border-light: rgba(255, 255, 255, 0.2);
+  --glass-border-dark: rgba(0, 0, 0, 0.2);
+  --backdrop-blur: blur(16px);
+  --text-primary-light: rgba(0, 0, 0, 0.9);
+  --text-primary-dark: rgba(255, 255, 255, 0.9);
+  --text-secondary-light: rgba(0, 0, 0, 0.6);
+  --text-secondary-dark: rgba(255, 255, 255, 0.6);
+  
+  /* Animation durations */
+  --transition-fast: 0.15s;
+  --transition-normal: 0.25s;
+  --transition-slow: 0.35s;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #000;
+  color: #fff;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+code {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', source-code-pro, Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+/* Enhanced Button Styles */
+.btn-primary {
+  @apply px-4 py-2 rounded-lg font-medium border transition-all duration-200 shadow-sm;
+  @apply hover:shadow-md hover:scale-105 active:scale-95;
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+}
+
+.btn-primary.dark {
+  @apply bg-white text-black border-white hover:bg-gray-100;
+  @apply focus:ring-white focus:ring-offset-black;
+}
+
+.btn-primary.light {
+  @apply bg-black text-white border-black hover:bg-gray-900;
+  @apply focus:ring-black focus:ring-offset-white;
+}
+
+.btn-secondary {
+  @apply px-3 py-1.5 rounded-md text-sm font-medium border transition-all duration-200;
+  @apply hover:scale-105 active:scale-95 focus:outline-none focus:ring-2;
+}
+
+.btn-ghost {
+  @apply px-3 py-1.5 rounded-md text-sm transition-all duration-200;
+  @apply hover:bg-opacity-10 hover:bg-current active:scale-95;
+}
+
+/* Enhanced Input Styles */
+.input-field {
+  @apply w-full px-3 py-2 rounded-lg border text-sm transition-all duration-200;
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-1;
+  @apply placeholder:text-opacity-60;
+}
+
+.input-field.dark {
+  @apply bg-black text-white border-neutral-700 placeholder:text-neutral-400;
+  @apply focus:border-neutral-500 focus:ring-neutral-500;
+}
+
+.input-field.light {
+  @apply bg-white text-black border-neutral-300 placeholder:text-neutral-500;
+  @apply focus:border-neutral-500 focus:ring-neutral-500;
+}
+
+/* Card Components */
+.card {
+  @apply rounded-xl border shadow-sm transition-all duration-200;
+  @apply hover:shadow-md;
+}
+
+.card.dark {
+  @apply bg-neutral-900 border-neutral-800;
+}
+
+.card.light {
+  @apply bg-white border-neutral-200;
+}
+
+/* Loading Animation */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.loading-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.loading-shimmer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  animation: shimmer 1.5s infinite;
+}
+
+/* Pulse Animation */
+@keyframes pulse-glow {
+  0%, 100% { 
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Scroll Enhancements */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.7);
+}
+
+/* Message Bubble Animations */
+.message-enter {
+  animation: message-slide-in 0.3s ease-out forwards;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+@keyframes message-slide-in {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Floating Action Button */
+.fab {
+  @apply fixed bottom-6 right-6 w-14 h-14 rounded-full shadow-lg;
+  @apply flex items-center justify-center transition-all duration-300;
+  @apply hover:scale-110 active:scale-95;
+  z-index: 50;
+}
+
+/* Glass Effect Enhancement */
+.glass-effect {
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Typography Enhancements */
+.text-gradient {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Enhanced Focus States */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500;
+}
+
+/* Micro-interactions */
+.hover-lift {
+  @apply transition-transform duration-200 hover:-translate-y-1;
+}
+
+.click-shrink {
+  @apply active:scale-95 transition-transform duration-100;
+}
