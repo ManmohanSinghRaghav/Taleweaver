@@ -1,5 +1,11 @@
 import { useState, useEffect } from 'react';
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheck, faFileText, faXmark } from '@fortawesome/free-solid-svg-icons';
 import { computeLineDiff, groupDiffLines, getDiffStats } from '../../utils/diffUtils';
+
+// Add icons to the library
+library.add(faCheck, faFileText, faXmark);
 
 const DiffViewer = ({ oldContent, newContent, onClose, isDarkMode }) => {
   const [viewMode, setViewMode] = useState('unified'); // 'unified' or 'split'
@@ -24,7 +30,7 @@ const DiffViewer = ({ oldContent, newContent, onClose, isDarkMode }) => {
   const groupedDiff = groupDiffLines(diff);
   const stats = getDiffStats(diff);
   
-  const border = isDarkMode ? 'border-neutral-700' : 'border-neutral-200';
+  const border = isDarkMode ? 'border-yinmn_blue-400' : 'border-silver_lake_blue-700';
   
   return (
     <div 
@@ -35,15 +41,15 @@ const DiffViewer = ({ oldContent, newContent, onClose, isDarkMode }) => {
         }
       }}
     >
-      <div className={`w-[90vw] h-[80vh] max-w-6xl rounded-xl border ${border} ${
+      <div className={`w-[90vw] h-[80vh] max-w-6xl border ${border} ${
         isDarkMode ? 'bg-neutral-900' : 'bg-white'
       } flex flex-col shadow-2xl`}>
         
         {/* Header */}
-        <div className={`p-4 border-b ${border} flex items-center justify-between`}>
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-              <span className="text-white text-sm">📝</span>
+        <div className={`p-base border-b ${border} flex items-center justify-between`}>
+          <div className="flex items-center gap-base">
+            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
+              <FontAwesomeIcon icon={faFileText} className="w-4 h-4 text-white" />
             </div>
             <div>
               <h2 className="text-lg font-bold">Story Improvement</h2>
@@ -53,11 +59,11 @@ const DiffViewer = ({ oldContent, newContent, onClose, isDarkMode }) => {
             </div>
           </div>
           
-          <div className="flex items-center gap-3">
-            <div className="flex rounded-lg border border-neutral-300 dark:border-neutral-600 overflow-hidden">
+          <div className="flex items-center gap-base">
+            <div className="flex border border-neutral-300 dark:border-neutral-600 overflow-hidden">
               <button
                 onClick={() => setViewMode('unified')}
-                className={`px-3 py-1 text-sm transition-colors ${
+                className={`px-base py-xs text-sm transition-colors ${
                   viewMode === 'unified'
                     ? isDarkMode ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'
                     : isDarkMode ? 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
@@ -67,7 +73,7 @@ const DiffViewer = ({ oldContent, newContent, onClose, isDarkMode }) => {
               </button>
               <button
                 onClick={() => setViewMode('split')}
-                className={`px-3 py-1 text-sm transition-colors ${
+                className={`px-base py-xs text-sm transition-colors ${
                   viewMode === 'split'
                     ? isDarkMode ? 'bg-blue-600 text-white' : 'bg-blue-500 text-white'
                     : isDarkMode ? 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
@@ -79,12 +85,12 @@ const DiffViewer = ({ oldContent, newContent, onClose, isDarkMode }) => {
             
             <button
               onClick={onClose}
-              className={`p-2 rounded-lg border ${border} transition-colors hover:scale-105 ${
+              className={`p-sm border ${border} transition-colors hover:scale-105 ${
                 isDarkMode ? 'bg-neutral-800 text-white hover:bg-neutral-700' : 'bg-neutral-100 text-black hover:bg-neutral-200'
               }`}
               title="Close diff view"
             >
-              ✕
+              <FontAwesomeIcon icon={faXmark} className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -94,8 +100,8 @@ const DiffViewer = ({ oldContent, newContent, onClose, isDarkMode }) => {
           {stats.added === 0 && stats.removed === 0 ? (
             <div className="h-full flex items-center justify-center">
               <div className="text-center">
-                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center">
-                  <span className="text-white text-2xl">✓</span>
+                <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-green-500 to-emerald-600 flex items-center justify-center">
+                  <FontAwesomeIcon icon={faCheck} className="w-8 h-8 text-white" />
                 </div>
                 <h3 className="text-lg font-semibold mb-2">No Changes Detected</h3>
                 <p className="text-sm opacity-70">The improved content is identical to the original.</p>
@@ -118,21 +124,21 @@ const DiffViewer = ({ oldContent, newContent, onClose, isDarkMode }) => {
         </div>
         
         {/* Footer */}
-        <div className={`p-4 border-t ${border} flex justify-between items-center text-sm opacity-70`}>
+        <div className={`p-base border-t ${border} flex justify-between items-center text-sm opacity-70`}>
           <div>
             Story improved successfully
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-base">
             <span className="flex items-center gap-1">
-              <span className="w-3 h-3 bg-green-500 rounded"></span>
+              <span className="w-3 h-3 bg-green-500"></span>
               +{stats.added} added
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-3 h-3 bg-red-500 rounded"></span>
+              <span className="w-3 h-3 bg-red-500"></span>
               -{stats.removed} removed
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-3 h-3 bg-neutral-500 rounded"></span>
+              <span className="w-3 h-3 bg-neutral-500"></span>
               {stats.unchanged} unchanged
             </span>
           </div>

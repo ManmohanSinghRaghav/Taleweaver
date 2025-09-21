@@ -1,10 +1,16 @@
 // TaleWeaver - Two-Panel Interactive Writing Assistant
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { library } from '@fortawesome/fontawesome-svg-core';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faPlay, faStop, faDownload, faRotateRight, faWandMagicSparkles, faCheck, faXmark } from '@fortawesome/free-solid-svg-icons';
 import ThemeToggle from './components/ui/ThemeToggle';
 import CharacterSetup from './components/ui/CharacterSetup';
 import DiffViewer from './components/ui/DiffViewer';
 import { useAppState } from './hooks/useAppState';
 import { useStoryApi } from './hooks/useStoryApi';
+
+// Add icons to the library
+library.add(faPlay, faStop, faDownload, faRotateRight, faWandMagicSparkles, faCheck, faXmark);
 
 const TaleWeaver = () => {
   const {
@@ -64,6 +70,9 @@ const TaleWeaver = () => {
   // Story title editing state
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState('');
+
+  // Ref for the source editor textarea
+  const editorTextareaRef = useRef(null);
 
   // Save story to localStorage whenever it changes
   useEffect(() => {
@@ -141,14 +150,38 @@ const TaleWeaver = () => {
       if (isMounted.current) setIsSpeaking(false);
       return;
     }
-    const text = storyData.chatHistory
-      .filter(i => i.type === 'story')
-      .map(i => i.content)
-      .join(' ')
+    
+    // Read from the actual story content in the editor, not from chat history
+    const rawText = storyData.editorContent || '';
+    
+    // Clean the text by removing markdown formatting for better speech
+    const cleanText = rawText
+      .replace(/^#+\s*/gm, '')           // Remove markdown headers (# ## ###)
+      .replace(/\*\*(.*?)\*\*/g, '$1')   // Remove bold formatting (**)
+      .replace(/\*(.*?)\*/g, '$1')       // Remove italic formatting (*)
+      .replace(/^>\s*/gm, '')            // Remove blockquotes (>)
+      .replace(/^-\s*/gm, '')            // Remove list markers (-)
+      .replace(/^\*\s*/gm, '')           // Remove list markers (*)
+      .replace(/---+/g, '')              // Remove horizontal rules
+      .replace(/\n\s*\n\s*\n/g, '\n\n')  // Clean up excessive line breaks
       .trim();
-    if (!text) return;
+    
+    if (!cleanText) {
+      // If no story content, inform the user
+      const message = "No story content to read. Please write your story first.";
+      const utter = new SpeechSynthesisUtterance(message);
+      const v = pickVoice();
+      if (v) utter.voice = v;
+      utter.lang = (v && v.lang) || 'en-US';
+      utter.onend = () => {
+        if (isMounted.current) setIsSpeaking(false);
+      };
+      window.speechSynthesis.speak(utter);
+      if (isMounted.current) setIsSpeaking(true);
+      return;
+    }
 
-    const utter = new SpeechSynthesisUtterance(text);
+    const utter = new SpeechSynthesisUtterance(cleanText);
     const v = pickVoice();
     if (v) utter.voice = v;
     utter.lang = (v && v.lang) || 'en-US';
@@ -210,7 +243,7 @@ const TaleWeaver = () => {
         // Update the content
         updateStory({ 
           editorContent: result.storySegment,
-          chatHistory: [...newChatHistory, { type: 'story', content: `✨ Applied improvement: ${text}` }]
+          chatHistory: [...newChatHistory, { type: 'story', content: `Applied improvement: ${text}` }]
         });
         
         // Clear any previous errors on success
@@ -274,19 +307,33 @@ const TaleWeaver = () => {
   // Reset current story
   const resetCurrentStory = () => {
     updateStory({
+      title: '',
       editorContent: '',
       chatHistory: [],
-      genreText: '',
-      character: '',
+      characters: [
+        {
+          id: '1',
+          name: '',
+          role: '',
+          description: '',
+          traits: []
+        }
+      ],
+      themes: [],
+      genres: [],
+      setting: '',
+      plotPoints: [],
       wordCount: 0,
+      createdAt: Date.now(),
     });
+    // Reset manual edit flag
+    setIsManualEdit(false);
+    // Reset title editing state if active
+    setIsEditingTitle(false);
+    setTempTitle('');
   };
 
-  // Styling helpers: strict black/white theme
-  const containerBg = isDarkMode ? 'bg-black text-white' : 'bg-white text-black';
-  const leftBg = isDarkMode ? 'bg-neutral-950' : 'bg-neutral-50';
-  const rightBg = isDarkMode ? 'bg-neutral-900' : 'bg-white';
-  const border = isDarkMode ? 'border-neutral-800' : 'border-neutral-300';
+  // Clean glass theme without neumorphism variables
 
   // Ensure welcome message exists at start
   const chatMessages = useMemo(() => {
@@ -295,183 +342,188 @@ const TaleWeaver = () => {
   }, [storyData.chatHistory]);
 
   return (
-    <div className={`min-h-screen h-screen w-screen ${containerBg} transition-colors duration-300`}>
-      {/* Enhanced Top bar with gradient backdrop */}
-      <header className={`h-14 flex items-center justify-between px-6 border-b ${border} ${rightBg} relative overflow-hidden`}>
-        {/* Background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-purple-500/5 to-pink-500/5"></div>
-        
-        <div className="relative z-10 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
-            <span className="text-white font-bold text-sm">TW</span>
+    <div className={`min-h-screen h-screen w-screen bg-primary transition-colors duration-300 ${isDarkMode ? 'dark' : ''}`}>
+      {/* VS Code-like Header - 48px height */}
+      <header className="glass-header flex items-center justify-between px-6">
+        <div className="flex items-center gap-base">
+          <div className="glass-button w-8 h-8 p-0 flex items-center justify-center">
+            <img src="/logo.png" alt="TaleWeaver" className="w-6 h-6 object-contain" />
           </div>
-          <div className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            TaleWeaver
-          </div>
+          <div className="text-base font-medium">TaleWeaver</div>
         </div>
         
-        <div className="relative z-10 flex items-center gap-3">
+        <div className="flex items-center gap-sm">
           <select
             value={voiceType}
             onChange={(e) => setVoiceType(e.target.value)}
-            className={`text-xs px-3 py-2 rounded-lg border ${border} transition-all duration-200 ${isDarkMode ? 'bg-neutral-800 text-white hover:bg-neutral-700' : 'bg-white text-black hover:bg-neutral-50'} focus:ring-2 focus:ring-blue-500`}
+            className="glass-input text-sm py-xs px-base w-auto"
             title="Voice"
           >
-            <option value="female">♀ Female Voice</option>
-            <option value="male">♂ Male Voice</option>
+            <option value="female">♀ Female</option>
+            <option value="male">♂ Male</option>
           </select>
           
           <button
             onClick={readStory}
-            className={`px-3 py-2 rounded-lg text-xs font-medium border ${border} transition-all duration-200 hover:scale-105 active:scale-95 focus:ring-2 focus:ring-blue-500 ${
+            className={`glass-button text-sm font-light px-base py-xs ${
               isSpeaking 
-                ? 'bg-red-500 text-white border-red-500 hover:bg-red-600' 
-                : isDarkMode ? 'bg-green-600 text-white border-green-600 hover:bg-green-700' : 'bg-green-500 text-white border-green-500 hover:bg-green-600'
+                ? 'text-mono-900 dark:text-mono-100'
+                : 'text-mono-600 dark:text-mono-400'
             }`}
           >
-            {isSpeaking ? '⏹ Stop' : '▶ Read'}
+            <div className="flex items-center gap-sm">
+              {isSpeaking ? (
+                <>
+                  <FontAwesomeIcon icon={faStop} className="w-3 h-3" />
+                  Stop
+                </>
+              ) : (
+                <>
+                  <FontAwesomeIcon icon={faPlay} className="w-3 h-3" />
+                  Read
+                </>
+              )}
+            </div>
           </button>
           
           <button
             onClick={exportCurrentStory}
-            className={`px-3 py-2 rounded-lg text-xs font-medium border ${border} transition-all duration-200 hover:scale-105 active:scale-95 focus:ring-2 focus:ring-blue-500 ${isDarkMode ? 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700' : 'bg-blue-500 text-white border-blue-500 hover:bg-blue-600'}`}
+            className="glass-button text-sm font-light px-base py-xs text-mono-600 dark:text-mono-400"
           >
-            💾 Save
+            <div className="flex items-center gap-sm">
+              <FontAwesomeIcon icon={faDownload} className="w-3 h-3" />
+              Save
+            </div>
           </button>
           
           <button
-            onClick={() => { if (window.confirm('Reset current story?')) resetCurrentStory(); }}
-            className={`px-3 py-2 rounded-lg text-xs font-medium border ${border} transition-all duration-200 hover:scale-105 active:scale-95 focus:ring-2 focus:ring-orange-500 ${isDarkMode ? 'bg-orange-600 text-white border-orange-600 hover:bg-orange-700' : 'bg-orange-500 text-white border-orange-500 hover:bg-orange-600'}`}
+            onClick={() => { 
+              if (window.confirm('Reset entire story? This will clear:\n• Story content (canvas)\n• Chat history\n• Setup (characters, genres, themes, setting)\n• Story title\n\nThis action cannot be undone.')) {
+                resetCurrentStory();
+              }
+            }}
+            className="glass-button text-sm font-light px-base py-xs text-mono-600 dark:text-mono-400"
+            title="Reset entire story including content and setup"
           >
-            🔄 Reset
+            <div className="flex items-center gap-sm">
+              <FontAwesomeIcon icon={faRotateRight} className="w-3 h-3" />
+              Reset All
+            </div>
           </button>
           
           <ThemeToggle isDarkMode={isDarkMode} toggleTheme={toggleTheme} />
         </div>
       </header>
 
-      {/* Main two-column layout with enhanced spacing */}
-      <div className={`h-[calc(100vh-3.5rem)] w-full flex overflow-hidden`}>
-        {/* Enhanced Chat Panel (Left) */}
-        <aside className={`flex-[2] h-full ${leftBg} border-r ${border} overflow-hidden`}>
+      {/* Main layout: Sidebar + Editor */}
+      <div className="h-[calc(100vh-48px)] w-full flex overflow-hidden bg-primary">
+        {/* Sidebar */}
+        <aside className="flex-[2] h-full glass-sidebar overflow-hidden">
           <div className="h-full flex flex-col">
-            {/* Chat header with gradient */}
-            <div className={`p-4 border-b ${border} relative overflow-hidden`}>
-              <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-teal-500/10"></div>
-              <div className="relative z-10 flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center">
-                  <span className="text-white text-sm">�</span>
-                </div>
-                <div className="text-base font-semibold">Writing Assistant</div>
+            {/* Chat header */}
+            <div className="p-4 border-b border-glass-border">
+              <div className="flex items-center">
+                <div className="text-base font-medium">AI Assistant</div>
               </div>
             </div>
 
-            {/* Enhanced conversation messages */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-4 text-sm custom-scrollbar"
-              style={{ maxHeight: 'calc(100vh - 14rem)' }}
+            {/* Chat messages with compact spacing */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 text-base scrollbar-clean"
+              style={{ maxHeight: 'calc(100vh - 200px)' }}
             >
             {chatMessages.length === 0 && !isLoading && (
-              <div className="flex flex-col items-center justify-center py-12 text-center space-y-4">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-500/20 to-teal-500/20 flex items-center justify-center">
-                  <span className="text-2xl">🔧</span>
+              <div className="flex flex-col items-center justify-center py-8 text-center space-y-4">
+                <div className="w-12 h-12 bg-mono-200 dark:bg-mono-800 flex items-center justify-center">
+                        <FontAwesomeIcon icon={faWandMagicSparkles} className="w-5 h-5 text-mono-600 dark:text-mono-400" />
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-lg font-semibold">Writing Assistant</h3>
-                  <p className="text-sm opacity-70 max-w-xs">
-                    Write your story in the canvas tab, then use this chat to request improvements and refinements.
+                  <h3 className="text-base font-medium">AI Story Assistant</h3>
+                  <p className="text-sm text-mono-600 dark:text-mono-400 max-w-48">
+                    Write your story in the editor, then ask me to improve it.
                   </p>
                 </div>
-                <div className="space-y-2 text-xs opacity-60">
-                  <p>Try requests like:</p>
+                <div className="space-y-2 text-sm text-mono-500">
+                  <p className="font-medium">Try asking:</p>
                   <div className="space-y-1">
-                    <p>• &ldquo;Make this more dramatic&rdquo;</p>
-                    <p>• &ldquo;Add more dialogue&rdquo;</p>
-                    <p>• &ldquo;Improve the pacing&rdquo;</p>
-                    <p>• &ldquo;Fix grammar and style&rdquo;</p>
+                    <p>• "Make this more dramatic"</p>
+                    <p>• "Add more dialogue"</p>
+                    <p>• "Improve the pacing"</p>
+                    <p>• "Fix grammar and style"</p>
                   </div>
                 </div>
               </div>
             )}
             {chatMessages.map((item, idx) => (
-              <div key={idx} className="space-y-2 message-enter" style={{ animationDelay: `${idx * 0.1}s` }}>
+              <div key={idx} className="space-y-2" style={{ animationDelay: `${idx * 0.1}s` }}>
                 {item.type === 'story' ? (
-                  <div className={`p-4 rounded-2xl border ${border} ${
-                    isDarkMode ? 'bg-gradient-to-br from-neutral-900 to-neutral-800' : 'bg-gradient-to-br from-white to-neutral-50'
-                  } shadow-sm hover:shadow-md transition-all duration-200 relative overflow-hidden`}>
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-purple-500/5"></div>
-                    <div className="relative z-10">
-                      <div className="text-xs opacity-70 mb-3 flex items-center gap-2">
-                        <div className={`w-6 h-6 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center`}>
-                          <span className="text-white text-xs">✨</span>
-                        </div>
-                        <span className="font-medium">TaleWeaver</span>
-                        <div className="flex-1"></div>
-                        <span className="text-xs opacity-50">{new Date().toLocaleTimeString()}</span>
+                  <div className="border border-mono-200 dark:border-mono-800 p-4 bg-mono-50/50 dark:bg-mono-900/50">
+                    <div className="flex items-start gap-2 mb-2">
+                      <div className="w-5 h-5 bg-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-sm text-white">C</span>
                       </div>
-                      <div className="whitespace-pre-wrap leading-relaxed text-base">{item.content}</div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">AI Assistant</span>
+                          <span className="text-sm text-mono-500">{new Date().toLocaleTimeString()}</span>
+                        </div>
+                      </div>
                     </div>
+                    <div className="text-sm leading-relaxed ml-6">{item.content}</div>
                   </div>
                 ) : (
-                  <div className={`ml-6 pl-4 border-l-2 ${isDarkMode ? 'border-emerald-500/50' : 'border-emerald-400/50'} opacity-90 relative`}>
-                    <div className="text-xs opacity-70 mb-2 flex items-center gap-2">
-                      <div className={`w-5 h-5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 flex items-center justify-center`}>
-                        <span className="text-white text-xs">👤</span>
+                  <div className="border border-mono-200 dark:border-mono-800 p-4">
+                    <div className="flex items-start gap-2 mb-2">
+                      <div className="w-5 h-5 bg-mono-400 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <span className="text-sm text-white">U</span>
                       </div>
-                      <span className="font-medium">You</span>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium">You</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="whitespace-pre-wrap bg-gradient-to-r from-emerald-500/10 to-teal-500/10 p-3 rounded-lg">
-                      {item.content}
-                    </div>
+                    <div className="text-sm leading-relaxed ml-6">{item.content}</div>
                   </div>
                 )}
               </div>
             ))}
 
             {isLoading && (
-              <div className="text-center py-6">
-                <div className={`inline-flex items-center gap-3 px-6 py-4 rounded-2xl ${
-                  isDarkMode ? 'bg-gradient-to-r from-blue-900/50 to-purple-900/50' : 'bg-gradient-to-r from-blue-50 to-purple-50'
-                } border ${border}`}>
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                    <div className="w-2 h-2 bg-pink-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+              <div className="text-center py-lg">
+                <div className="glass-card inline-flex items-center gap-base px-xl py-lg">
+                  <div className="flex gap-sm">
+                    <div className="w-2 h-2 bg-mono-600 dark:bg-mono-400 animate-bounce"></div>
+                    <div className="w-2 h-2 bg-mono-700 dark:bg-mono-500 animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                    <div className="w-2 h-2 bg-mono-800 dark:bg-mono-600 animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                   </div>
-                  <span className="text-sm font-medium">✨ Crafting your story...</span>
+                  <div className="flex items-center gap-2">
+                    <FontAwesomeIcon icon={faWandMagicSparkles} className="w-4 h-4" />
+                    <span className="text-body font-light">Crafting your story...</span>
+                  </div>
                 </div>
               </div>
             )}
 
             {error && (
-              <div className={`text-center py-4`}>
-                <div className={`inline-flex items-center gap-2 px-4 py-3 rounded-xl border-2 ${
-                  isDarkMode 
-                    ? 'border-red-500/50 bg-red-900/20 text-red-300' 
-                    : 'border-red-400/50 bg-red-50 text-red-700'
-                }`}>
+              <div className="text-center py-lg">
+                <div className="glass-card inline-flex items-center gap-base px-lg py-base text-body">
                   <span>⚠️</span>
-                  <span className="text-sm font-medium">{error}</span>
+                  <span className="text-sm font-light">{error}</span>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Enhanced suggestions above input */}
+          {/* Compact suggestions panel */}
           {!isLoading && (
-            <div className={`border-t ${border} p-4 space-y-3 ${isDarkMode ? 'bg-gradient-to-r from-neutral-900 to-neutral-800' : 'bg-gradient-to-r from-neutral-50 to-white'}`}>
-              <div className="text-xs font-medium opacity-70 flex items-center gap-1">
-                <span>💡</span> Improvement suggestions:
-              </div>
-              <div className="flex gap-3">
+            <div className="border-t border-glass-border p-4">
+              <div className="text-sm text-mono-600 dark:text-mono-400 mb-2">Suggestions:</div>
+              <div className="grid grid-cols-1 gap-1">
                 {improvementSuggestions.slice(0, 2).map((s, i) => (
                   <button
                     key={i}
                     onClick={() => setMessage(s)}
-                    className={`flex-1 text-xs px-4 py-3 rounded-xl border ${border} transition-all duration-200 hover:scale-105 active:scale-95 focus:ring-2 focus:ring-blue-500 ${
-                      isDarkMode 
-                        ? 'bg-neutral-800 text-white hover:bg-neutral-700 border-neutral-600' 
-                        : 'bg-white text-black hover:bg-neutral-50 border-neutral-300'
-                    }`}
+                    className="text-left text-sm p-2 border border-mono-200 dark:border-mono-800 hover:bg-mono-100 dark:hover:bg-mono-800 text-mono-700 dark:text-mono-300"
                   >
                     {s}
                   </button>
@@ -480,9 +532,9 @@ const TaleWeaver = () => {
             </div>
           )}
 
-          {/* Enhanced input row */}
-          <div className={`border-t ${border} p-4 ${isDarkMode ? 'bg-neutral-900' : 'bg-white'}`}>
-            <div className="flex items-end gap-4">
+          {/* Compact input panel */}
+          <div className="border-t border-glass-border p-4">
+            <div className="flex items-end gap-2">
               <div className="flex-1">
                 <textarea
                   value={message}
@@ -493,56 +545,35 @@ const TaleWeaver = () => {
                       sendMessage();
                     }
                   }}
-                  placeholder={'Request story improvements: "Make it more dramatic", "Add dialogue", "Improve pacing", "Fix grammar"... (Enter to send, Shift+Enter for new line)'}
-                  rows={3}
-                  className={`w-full px-4 py-3 rounded-xl border ${border} text-sm resize-none transition-all duration-200 ${
-                    isDarkMode 
-                      ? 'bg-neutral-800 text-white placeholder:text-neutral-400 focus:bg-neutral-700' 
-                      : 'bg-white text-black placeholder:text-neutral-500 focus:bg-neutral-50'
-                  } focus:ring-2 focus:ring-blue-500 focus:border-transparent`}
+                  placeholder="Ask AI to improve your story..."
+                  rows={2}
+                  className="w-full text-sm p-3 border border-mono-200 dark:border-mono-800 bg-mono-50 dark:bg-mono-900 text-mono-800 dark:text-mono-200 placeholder-mono-500 resize-none focus:outline-none focus:ring-1 focus:ring-blue-500"
                   disabled={isLoading}
                 />
               </div>
               <button
                 onClick={sendMessage}
                 disabled={isLoading || !message.trim()}
-                className={`px-6 py-3 rounded-xl font-medium transition-all duration-200 focus:ring-2 focus:ring-blue-500 ${
+                className={`px-4 py-2 text-sm font-medium ${
                   isLoading || !message.trim() 
-                    ? 'opacity-50 cursor-not-allowed bg-neutral-400 text-neutral-200' 
-                    : isDarkMode
-                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:from-blue-700 hover:to-purple-700 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl'
-                      : 'bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 hover:scale-105 active:scale-95 shadow-lg hover:shadow-xl'
+                    ? 'bg-mono-200 dark:bg-mono-800 text-mono-500 cursor-not-allowed' 
+                    : 'bg-blue-500 hover:bg-blue-600 text-white'
                 }`}
               >
-                {isLoading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    <span>...</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <span>Send</span>
-                    <span>🚀</span>
-                  </div>
-                )}
+                {isLoading ? '...' : 'Send'}
               </button>
             </div>
           </div>
           </div>
         </aside>
 
-        {/* Enhanced Editor Panel (Right) */}
-        <section className={`flex-[3] h-full ${rightBg} overflow-hidden relative`}>
-          <div className={`h-full flex flex-col`}>
-            {/* Enhanced header with gradient */}
-            <div className={`p-5 border-b ${border} flex items-center justify-between relative overflow-hidden`}>
-              <div className="absolute inset-0 bg-gradient-to-r from-violet-500/10 to-pink-500/10"></div>
-              
-              <div className="relative z-10">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-pink-600 flex items-center justify-center">
-                    <span className="text-white text-sm">📝</span>
-                  </div>
+        {/* Main Content Area - Glass Panel with systematic spacing */}
+        <section className="flex-[3] h-full glass-panel overflow-hidden relative">
+          <div className="h-full flex flex-col p-base space-y-base">
+            {/* Header with clean styling like chat */}
+            <div className="p-4 border-b border-glass-border">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
                   <div>
                     {isEditingTitle ? (
                       <div className="flex items-center gap-2">
@@ -556,130 +587,126 @@ const TaleWeaver = () => {
                           }}
                           onBlur={saveTitleEdit}
                           autoFocus
-                          className={`text-lg font-bold bg-transparent border-b-2 border-blue-500 outline-none ${
-                            isDarkMode ? 'text-white' : 'text-black'
-                          }`}
+                          className="text-sm bg-transparent border-b border-mono-400 dark:border-mono-600 outline-none text-mono-800 dark:text-mono-100"
                           placeholder="Enter story title..."
                         />
                         <button
                           onClick={saveTitleEdit}
-                          className="text-green-500 hover:text-green-600 text-sm"
+                          className="text-xs text-mono-600 dark:text-mono-400 hover:text-mono-800 dark:hover:text-mono-200"
                           title="Save title (Enter)"
                         >
-                          ✓
+                          <FontAwesomeIcon icon={faCheck} className="w-3 h-3" />
                         </button>
                         <button
                           onClick={cancelTitleEdit}
-                          className="text-red-500 hover:text-red-600 text-sm"
+                          className="text-xs text-mono-600 dark:text-mono-400 hover:text-mono-800 dark:hover:text-mono-200"
                           title="Cancel (Escape)"
                         >
-                          ✕
+                          <FontAwesomeIcon icon={faXmark} className="w-3 h-3" />
                         </button>
                       </div>
                     ) : (
                       <h2 
-                        className="text-lg font-bold cursor-pointer hover:text-blue-500 transition-colors flex items-center gap-2"
+                        className="text-base font-medium cursor-pointer transition-colors flex items-center gap-2 text-mono-800 dark:text-mono-100"
                         onClick={startTitleEdit}
                         title="Click to edit story title"
                       >
                         {storyData.title || 'Untitled Story'}
-                        <span className="text-xs opacity-50">✏️</span>
                       </h2>
                     )}
-                    <p className="text-xs opacity-70">
-                      {activeTab === 'preview' && 'Formatted preview of your story'}
-                      {activeTab === 'source' && 'Edit markdown source directly'}
-                      {activeTab === 'setup' && 'Configure characters, themes, and story elements'}
-                      <span className="ml-2">• {storyData.wordCount || 0} words</span>
-                      <span className="ml-2 text-green-500">• Auto-saved ✓</span>
+                    <div className="flex items-center gap-2 text-sm text-mono-600 dark:text-mono-400 mt-1">
+                      <span>
+                        {activeTab === 'preview' && 'Formatted preview'}
+                        {activeTab === 'source' && 'Markdown editor'}
+                        {activeTab === 'setup' && 'Story configuration'}
+                      </span>
+                      <span>•</span>
+                      <span>{storyData.wordCount || 0} words</span>
                       {isManualEdit && (
-                        <span className="ml-2 inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-blue-500/20 text-blue-600 dark:text-blue-400">
-                          <span>🔒</span> Manual edit mode
-                        </span>
+                        <>
+                          <span>•</span>
+                          <span className="inline-flex items-center gap-1 text-blue-600 dark:text-blue-400">
+                            <span>🔒</span> Manual edit
+                          </span>
+                        </>
                       )}
-                    </p>
+                    </div>
                   </div>
                 </div>
               </div>
-              
-              <div className="relative z-10 flex items-center gap-2">
-                <button
-                  onClick={() => setActiveTab('preview')}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                    activeTab === 'preview'
-                      ? isDarkMode ? 'bg-gradient-to-r from-violet-600 to-pink-600 text-white shadow-lg' : 'bg-gradient-to-r from-violet-500 to-pink-500 text-white shadow-lg'
-                      : isDarkMode ? 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
-                  } hover:scale-105 active:scale-95 focus:ring-2 focus:ring-violet-500`}
-                >
-                  👁️ Preview
-                </button>
-                <button
-                  onClick={() => setActiveTab('source')}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                    activeTab === 'source'
-                      ? isDarkMode ? 'bg-gradient-to-r from-violet-600 to-pink-600 text-white shadow-lg' : 'bg-gradient-to-r from-violet-500 to-pink-500 text-white shadow-lg'
-                      : isDarkMode ? 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
-                  } hover:scale-105 active:scale-95 focus:ring-2 focus:ring-violet-500`}
-                >
-                  ⚡ Source
-                </button>
-                <button
-                  onClick={() => setActiveTab('setup')}
-                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
-                    activeTab === 'setup'
-                      ? isDarkMode ? 'bg-gradient-to-r from-violet-600 to-pink-600 text-white shadow-lg' : 'bg-gradient-to-r from-violet-500 to-pink-500 text-white shadow-lg'
-                      : isDarkMode ? 'bg-neutral-800 text-neutral-300 hover:bg-neutral-700' : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
-                  } hover:scale-105 active:scale-95 focus:ring-2 focus:ring-violet-500`}
-                >
-                  ⚙️ Setup
-                </button>
-              </div>
+            </div>
+
+            {/* VS Code-style Tab Bar */}
+            <div className="vscode-tab-bar">
+              <button
+                onClick={() => setActiveTab('preview')}
+                className={`vscode-tab ${activeTab === 'preview' ? 'active' : ''}`}
+              >
+                Preview
+              </button>
+              <button
+                onClick={() => setActiveTab('source')}
+                className={`vscode-tab ${activeTab === 'source' ? 'active' : ''}`}
+              >
+                Source
+              </button>
+              <button
+                onClick={() => setActiveTab('setup')}
+                className={`vscode-tab ${activeTab === 'setup' ? 'active' : ''}`}
+              >
+                Setup
+              </button>
             </div>
 
             {activeTab === 'preview' && (
-              <div className={`flex-1 overflow-auto p-4`}>
-                <div className={`max-w-none`}>
+              <div className="flex-1 overflow-auto p-4">
+                <div className="max-w-none">
                   {storyData.editorContent ? (
-                    <div className="formatted-story space-y-3">
+                    <div className="formatted-story space-y-4">
                       {storyData.editorContent.split('\n').map((line, idx) => {
                         const trimmed = line.trim();
                         if (trimmed.startsWith('# ')) {
-                          return <h1 key={idx} className="text-2xl font-bold mb-6 pb-2 border-b border-neutral-300">{trimmed.slice(2)}</h1>;
+                          return <h1 key={idx} className="text-xl font-semibold mb-4 pb-2 border-b border-mono-300 dark:border-mono-600 text-mono-800 dark:text-mono-100">{trimmed.slice(2)}</h1>;
                         } else if (trimmed.startsWith('## ')) {
-                          return <h2 key={idx} className="text-xl font-semibold mb-4 mt-6">{trimmed.slice(3)}</h2>;
+                          return <h2 key={idx} className="text-lg font-medium mb-3 mt-4 text-mono-800 dark:text-mono-100">{trimmed.slice(3)}</h2>;
                         } else if (trimmed.startsWith('### ')) {
-                          return <h3 key={idx} className="text-lg font-medium mb-3 mt-4">{trimmed.slice(4)}</h3>;
+                          return <h3 key={idx} className="text-base font-medium mb-2 mt-3 text-mono-600 dark:text-mono-400">{trimmed.slice(4)}</h3>;
                         } else if (trimmed.startsWith('**') && trimmed.endsWith('**') && trimmed.length > 4) {
-                          return <p key={idx} className="font-bold mb-2 text-sm">{trimmed.slice(2, -2)}</p>;
+                          return <p key={idx} className="font-semibold mb-2 text-sm text-mono-800 dark:text-mono-100">{trimmed.slice(2, -2)}</p>;
                         } else if (trimmed.startsWith('*') && trimmed.endsWith('*') && trimmed.length > 2) {
-                          return <p key={idx} className="italic mb-2">{trimmed.slice(1, -1)}</p>;
+                          return <p key={idx} className="italic mb-2 text-sm text-mono-600 dark:text-mono-400">{trimmed.slice(1, -1)}</p>;
                         } else if (trimmed === '---') {
-                          return <hr key={idx} className={`${isDarkMode ? 'border-neutral-600' : 'border-neutral-400'} my-6`} />;
+                          return <hr key={idx} className="border-mono-400 dark:border-mono-600 my-4" />;
                         } else if (trimmed.startsWith('> ')) {
-                          return <blockquote key={idx} className={`pl-4 border-l-4 italic mb-3 ${isDarkMode ? 'border-neutral-600 text-neutral-300' : 'border-neutral-400 text-neutral-600'}`}>{trimmed.slice(2)}</blockquote>;
+                          return <blockquote key={idx} className="pl-3 border-l-2 italic mb-3 border-mono-400 dark:border-mono-600 text-mono-600 dark:text-mono-300 text-sm">{trimmed.slice(2)}</blockquote>;
                         } else if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-                          return <li key={idx} className="ml-4 mb-1 list-disc">{trimmed.slice(2)}</li>;
+                          return <li key={idx} className="ml-4 mb-1 list-disc text-sm text-mono-800 dark:text-mono-100">{trimmed.slice(2)}</li>;
                         } else if (trimmed) {
-                          return <p key={idx} className="mb-3 leading-relaxed text-base">{trimmed}</p>;
+                          return <p key={idx} className="mb-3 leading-relaxed text-sm text-mono-800 dark:text-mono-100">{trimmed}</p>;
                         } else {
                           return <br key={idx} />;
                         }
                       })}
                     </div>
                   ) : (
-                    <div className="text-center opacity-50 mt-12">
-                      <h3 className="text-lg font-medium mb-4">Your Writing Canvas</h3>
-                      <p className="mb-2">Start writing your story here! Click the title above to rename it.</p>
-                      <p className="text-sm">Switch to the Source tab to write in markdown, or use Setup to configure your story elements.</p>
-                      <div className={`mt-6 p-4 rounded border ${border} text-left max-w-md mx-auto`}>
-                        <p className="text-sm font-medium mb-2">Quick start:</p>
-                        <ul className="text-xs space-y-1 opacity-70">
-                          <li>📝 Click title to rename your story</li>
-                          <li>⚙️ Use Setup tab for characters & themes</li>
-                          <li>✍️ Write directly in Source tab</li>
-                          <li>💬 Use chat for improvement requests</li>
-                          <li>👁️ Preview shows formatted story</li>
-                        </ul>
+                    <div className="flex flex-col items-center justify-center py-8 text-center space-y-4">
+                      <div className="w-12 h-12 bg-mono-200 dark:bg-mono-800 flex items-center justify-center">
+                        <FontAwesomeIcon icon={faWandMagicSparkles} className="w-5 h-5 text-mono-600 dark:text-mono-400" />
+                      </div>
+                      <div className="space-y-2">
+                        <h3 className="text-sm font-medium">Your Writing Canvas</h3>
+                        <p className="text-xs text-mono-600 dark:text-mono-400 max-w-48">
+                          Start writing your story here! Click the title above to rename it.
+                        </p>
+                      </div>
+                      <div className="space-y-2 text-xs text-mono-500">
+                        <p className="font-medium">Quick start:</p>
+                        <div className="space-y-1">
+                          <p>• Click title to rename your story</p>
+                          <p>• Use Setup tab for characters & themes</p>
+                          <p>• Write directly in Source tab</p>
+                          <p>• Use chat for improvement requests</p>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -691,17 +718,14 @@ const TaleWeaver = () => {
               <div className="flex-1 overflow-auto p-4">
                 <div className="h-full flex flex-col">
                   <textarea
+                    ref={editorTextareaRef}
                     value={storyData.editorContent || ''}
                     onChange={(e) => {
                       setIsManualEdit(true);
                       updateStory({ editorContent: e.target.value });
                     }}
                     placeholder={`# ${storyData.title || 'Your Story Title'}\n\nStart writing your story here! This is your primary writing space.\n\nUse markdown formatting:\n- **Bold text** for emphasis\n- *Italic text* for thoughts/emphasis\n- ## Chapter titles\n- * * * for scene breaks\n- > "Quoted dialogue"\n\nTip: Use the chat below to request improvements like:\n- "Make this more dramatic"\n- "Improve the dialogue"\n- "Add more sensory details"`}
-                    className={`flex-1 w-full resize-none focus:outline-none font-mono text-sm leading-relaxed ${
-                      isDarkMode 
-                        ? 'bg-neutral-800 text-white placeholder-neutral-400' 
-                        : 'bg-neutral-50 text-black placeholder-neutral-500'
-                    } p-3 rounded border ${border}`}
+                    className="flex-1 w-full resize-none font-mono text-sm leading-relaxed text-mono-800 dark:text-mono-100 bg-mono-50 dark:bg-mono-900 border border-mono-200 dark:border-mono-800 p-3 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                   <div className="mt-2 flex gap-2 flex-wrap">
                     <button
@@ -718,72 +742,23 @@ const TaleWeaver = () => {
                           document.body.removeChild(ta);
                         }
                       }}
-                      className={`px-3 py-1 text-xs rounded border ${border} ${isDarkMode ? 'bg-neutral-700 hover:bg-neutral-600' : 'bg-neutral-100 hover:bg-neutral-200'}`}
+                      className="px-3 py-1 text-sm text-mono-600 dark:text-mono-400 hover:text-mono-800 dark:hover:text-mono-200 border border-mono-200 dark:border-mono-800 bg-mono-50 dark:bg-mono-900"
                     >
-                      📋 Copy
+                      Copy
                     </button>
                     <button
                       onClick={() => updateStory({ editorContent: '' })}
-                      className={`px-3 py-1 text-xs rounded border ${border} ${isDarkMode ? 'bg-neutral-700 hover:bg-neutral-600' : 'bg-neutral-100 hover:bg-neutral-200'}`}
+                      className="px-3 py-1 text-sm text-mono-600 dark:text-mono-400 hover:text-mono-800 dark:hover:text-mono-200 border border-mono-200 dark:border-mono-800 bg-mono-50 dark:bg-mono-900"
                     >
-                      🗑️ Clear
-                    </button>
-                    <div className="border-l mx-2"></div>
-                    <button
-                      onClick={() => {
-                        const textarea = document.querySelector('textarea');
-                        if (textarea) {
-                          const start = textarea.selectionStart;
-                          const end = textarea.selectionEnd;
-                          const text = textarea.value;
-                          const selectedText = text.substring(start, end);
-                          const newText = text.substring(0, start) + `**${selectedText}**` + text.substring(end);
-                          updateStory({ editorContent: newText });
-                          setIsManualEdit(true);
-                        }
-                      }}
-                      className={`px-3 py-1 text-xs rounded border ${border} ${isDarkMode ? 'bg-neutral-700 hover:bg-neutral-600' : 'bg-neutral-100 hover:bg-neutral-200'}`}
-                      title="Make selected text bold"
-                    >
-                      **B**
-                    </button>
-                    <button
-                      onClick={() => {
-                        const textarea = document.querySelector('textarea');
-                        if (textarea) {
-                          const start = textarea.selectionStart;
-                          const end = textarea.selectionEnd;
-                          const text = textarea.value;
-                          const selectedText = text.substring(start, end);
-                          const newText = text.substring(0, start) + `*${selectedText}*` + text.substring(end);
-                          updateStory({ editorContent: newText });
-                          setIsManualEdit(true);
-                        }
-                      }}
-                      className={`px-3 py-1 text-xs rounded border ${border} ${isDarkMode ? 'bg-neutral-700 hover:bg-neutral-600' : 'bg-neutral-100 hover:bg-neutral-200'}`}
-                      title="Make selected text italic"
-                    >
-                      *I*
-                    </button>
-                    <button
-                      onClick={() => {
-                        const currentContent = storyData.editorContent || '';
-                        const newContent = currentContent + '\n\n* * *\n\n';
-                        updateStory({ editorContent: newContent });
-                        setIsManualEdit(true);
-                      }}
-                      className={`px-3 py-1 text-xs rounded border ${border} ${isDarkMode ? 'bg-neutral-700 hover:bg-neutral-600' : 'bg-neutral-100 hover:bg-neutral-200'}`}
-                      title="Add scene break"
-                    >
-                      * * *
+                      Clear
                     </button>
                     {isManualEdit && (
                       <button
                         onClick={() => setIsManualEdit(false)}
-                        className={`px-3 py-1 text-xs rounded border ${border} ${isDarkMode ? 'bg-blue-700 hover:bg-blue-600 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'}`}
+                        className="px-3 py-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20"
                         title="Re-enable automatic sync from chat"
                       >
-                        🔄 Enable Auto-sync
+                        🔄 Auto-sync
                       </button>
                     )}
                   </div>
@@ -792,7 +767,7 @@ const TaleWeaver = () => {
             )}
 
             {activeTab === 'setup' && (
-              <div className={`flex-1 overflow-auto`}>
+              <div className="flex-1 overflow-auto">
                 <CharacterSetup storyData={storyData} updateStory={updateStory} />
               </div>
             )}

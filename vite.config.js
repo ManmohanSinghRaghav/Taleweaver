@@ -13,10 +13,9 @@ export default defineConfig({
     include: [
       'react',
       'react-dom',
-      'react-icons/md',
-      'react-icons/bs',
-      'react-icons/fa',
-      'react-icons/ai'
+      '@fortawesome/react-fontawesome',
+      '@fortawesome/fontawesome-svg-core',
+      '@fortawesome/free-solid-svg-icons'
     ],
     force: true
   },
