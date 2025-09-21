@@ -1,21 +1,21 @@
-# TaleWeaver ✨
+# TaleWeaver
 
-A minimal, professional storytelling app with VS Code-inspired design. Write immersive stories with clean glassmorphism UI and AI assistance powered by Google's Gemini API.
+A minimal, professional storytelling application with VS Code-inspired design. Write immersive stories with clean glassmorphism UI and AI assistance powered by Google's Gemini API.
 
-## ✨ Features
+## Features
 
-- **🎨 VS Code-Inspired UI**: Clean, minimal interface with glassmorphism effects and sharp angular design
-- **🤖 AI Writing Assistant**: Smart story improvement suggestions via Google's Gemini API
-- **💾 Auto-Save**: Stories automatically persist to localStorage - never lose your work
-- **🎭 Character Setup**: Detailed character management with traits, descriptions, and roles
-- **🌓 Dark/Light Themes**: VS Code-style theme switching with monochromatic design
-- **🔊 Text-to-Speech**: Listen to your story content with built-in voice synthesis
-- **📝 Canvas-First Writing**: Primary writing interface with AI assistance in sidebar
-- **💬 AI Chat Assistant**: Focused improvement suggestions and writing guidance
-- **⚡ Frontend-Only**: No backend required - runs entirely in your browser
-- **🎯 8px Grid System**: Professional spacing following universal design standards
+- **VS Code-Inspired UI**: Clean, minimal interface with glassmorphism effects and sharp angular design
+- **AI Writing Assistant**: Smart story improvement suggestions via Google's Gemini API
+- **Auto-Save**: Stories automatically persist to localStorage - never lose your work
+- **Character Setup**: Detailed character management with traits, descriptions, and roles
+- **Dark/Light Themes**: VS Code-style theme switching with monochromatic design
+- **Text-to-Speech**: Listen to your story content with built-in voice synthesis
+- **Canvas-First Writing**: Primary writing interface with AI assistance in sidebar
+- **AI Chat Assistant**: Focused improvement suggestions and writing guidance
+- **Frontend-Only**: No backend required - runs entirely in your browser
+- **8px Grid System**: Professional spacing following universal design standards
 
-## 🚀 Quick Start
+## Quick Start
 
 1. **Install dependencies**
 ```powershell
@@ -31,7 +31,7 @@ npm run dev
 
 4. **Start writing!** Use the Story Canvas to write directly, then ask the AI Assistant for improvements.
 
-## 🎛️ Configuration
+## Configuration
 
 Create a `.env.local` file for your own Gemini API setup:
 
@@ -41,7 +41,7 @@ VITE_GEMINI_API_KEY=your_gemini_api_key_here
 VITE_GEMINI_MODEL=gemini-1.5-flash
 ```
 
-## 🏗️ Architecture
+## Architecture
 
 - **Frontend**: React 17 + Vite + Tailwind CSS
 - **AI Integration**: Direct Gemini API calls with frontend-only architecture
@@ -69,7 +69,7 @@ VITE_GEMINI_MODEL=gemini-1.5-flash
 └── tailwind.config.js              # Tailwind configuration
 ```
 
-## 🎨 Design System
+## Design System
 
 - **Color Palette**: Monochromatic using VS Code color tokens
 - **Typography**: Clean hierarchy with light font weights (300-400)
@@ -86,7 +86,7 @@ VITE_GEMINI_MODEL=gemini-1.5-flash
 - **Compact Chat**: GitHub Copilot-inspired AI assistant interface
 - **Angular Design**: No rounded borders - sharp, professional edges
 
-## 🎯 Usage Guide
+## Usage Guide
 
 ### Writing Workflow
 1. **Primary Canvas**: Write your story directly in the Source tab
@@ -107,7 +107,7 @@ VITE_GEMINI_MODEL=gemini-1.5-flash
 - **Character Traits**: Add/remove character traits with validation
 - **Diff Viewer**: Compare before/after story improvements
 
-## 🔧 Development
+## Development
 
 ```powershell
 # Development server
@@ -123,7 +123,7 @@ npm run preview
 npm run lint
 ```
 
-## 📋 Dependencies
+## Dependencies
 
 ### Core Dependencies
 - **React 17.0.2**: Frontend framework (compatible with FontAwesome)
@@ -138,7 +138,7 @@ npm run lint
 - **PostCSS**: CSS processing
 - **Autoprefixer**: CSS vendor prefixes
 
-## ⚡ Performance Features
+## Performance Features
 
 - **Optimized Bundling**: Vite-based build with code splitting
 - **Minimal Dependencies**: Lightweight FontAwesome and focused React hooks
@@ -146,21 +146,21 @@ npm run lint
 - **Local Storage**: Fast persistence without network calls
 - **CSS Optimization**: Tailwind purging and minimal custom CSS
 
-## 🎨 Recent Updates
+## Recent Updates
 
-- ✅ **VS Code-Inspired Design**: Complete UI overhaul with professional appearance
-- ✅ **Glassmorphism**: Clean glass effects throughout the interface
-- ✅ **FontAwesome 6 Icons**: Monochromatic icon system with React 17 compatibility
-- ✅ **8px Grid System**: Universal spacing standards
-- ✅ **Canvas-First Workflow**: Direct writing with AI assistance
-- ✅ **Enhanced Character Management**: Detailed character setup with traits system
-- ✅ **Story Reading**: Text-to-speech reads from actual story content (not chat)
-- ✅ **Angular Design**: Removed all rounded borders for professional look
-- ✅ **Compact Chat**: GitHub Copilot-style AI assistant interface
-- ✅ **Full-Width Inputs**: 100% width utilization for better writing experience
-- ✅ **Character Traits Fixed**: Robust trait management with null/undefined protection
+- **VS Code-Inspired Design**: Complete UI overhaul with professional appearance
+- **Glassmorphism**: Clean glass effects throughout the interface
+- **FontAwesome 6 Icons**: Monochromatic icon system with React 17 compatibility
+- **8px Grid System**: Universal spacing standards
+- **Canvas-First Workflow**: Direct writing with AI assistance
+- **Enhanced Character Management**: Detailed character setup with traits system
+- **Story Reading**: Text-to-speech reads from actual story content (not chat)
+- **Angular Design**: Removed all rounded borders for professional look
+- **Compact Chat**: GitHub Copilot-style AI assistant interface
+- **Full-Width Inputs**: 100% width utilization for better writing experience
+- **Character Traits Fixed**: Robust trait management with null/undefined protection
 
-## 🌟 Key Features
+## Key Features
 
 ### Story Canvas
 - **Direct Writing**: Primary interface for story creation
@@ -188,6 +188,6 @@ npm run lint
 
 ---
 
-**Built with ❤️ for storytellers who demand professional tools and beautiful interfaces.**
+**Built with dedication for storytellers who demand professional tools and beautiful interfaces.**
 
-Happy writing! ✨📖
+Happy writing!

@@ -2,15 +2,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { library } from '@fortawesome/fontawesome-svg-core';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlay, faStop, faDownload, faRotateRight, faWandMagicSparkles, faCheck, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faPlay, faStop, faDownload, faRotateRight, faWandMagicSparkles, faCheck, faXmark, faExclamationTriangle, faInfoCircle, faCheckCircle, faTimesCircle } from '@fortawesome/free-solid-svg-icons';
+import { faGithub } from '@fortawesome/free-brands-svg-icons';
 import ThemeToggle from './components/ui/ThemeToggle';
 import CharacterSetup from './components/ui/CharacterSetup';
 import DiffViewer from './components/ui/DiffViewer';
+import CustomAlert from './components/ui/CustomAlert';
 import { useAppState } from './hooks/useAppState';
 import { useStoryApi } from './hooks/useStoryApi';
 
 // Add icons to the library
-library.add(faPlay, faStop, faDownload, faRotateRight, faWandMagicSparkles, faCheck, faXmark);
+library.add(faPlay, faStop, faDownload, faRotateRight, faWandMagicSparkles, faCheck, faXmark, faExclamationTriangle, faInfoCircle, faCheckCircle, faTimesCircle, faGithub);
 
 const TaleWeaver = () => {
   const {
@@ -70,6 +72,19 @@ const TaleWeaver = () => {
   // Story title editing state
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [tempTitle, setTempTitle] = useState('');
+
+  // Custom alert state
+  const [alertConfig, setAlertConfig] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info',
+    onConfirm: null,
+    confirmText: 'Confirm',
+    cancelText: 'Cancel',
+    showCancel: true,
+    isDangerous: false,
+  });
 
   // Ref for the source editor textarea
   const editorTextareaRef = useRef(null);
@@ -210,7 +225,10 @@ const TaleWeaver = () => {
     
     // Check if there's content to improve
     if (!storyData.editorContent || storyData.editorContent.trim() === `# ${storyData.title || 'Your Story'}\n\nStart writing your story here...`) {
-      setError('Please write some story content in the canvas above first, then I can help improve it.');
+      showInfoAlert(
+        'No Story Content',
+        'Please write some story content in the canvas above first, then I can help improve it.'
+      );
       setIsLoading(false);
       return;
     }
@@ -256,12 +274,7 @@ const TaleWeaver = () => {
       console.error('Story improvement error:', e);
       if (isMounted.current) {
         const errorMessage = e.message || 'Failed to improve the story. Please try again.';
-        setError(errorMessage);
-        
-        // Auto-clear error after 10 seconds
-        setTimeout(() => {
-          if (isMounted.current) setError('');
-        }, 10000);
+        showErrorAlert('Story Improvement Failed', errorMessage);
       }
     } finally {
       if (isMounted.current) setIsLoading(false);
@@ -280,6 +293,12 @@ const TaleWeaver = () => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    
+    // Show success alert
+    showSuccessAlert(
+      'Story Exported',
+      'Your story has been successfully saved as a Markdown file.'
+    );
   };
 
   // Handle title editing
@@ -304,8 +323,69 @@ const TaleWeaver = () => {
     setDiffData(null);
   };
 
-  // Reset current story
-  const resetCurrentStory = () => {
+  // Custom alert helper functions
+  const showAlert = (config) => {
+    setAlertConfig({
+      isOpen: true,
+      title: config.title || 'Notification',
+      message: config.message || '',
+      type: config.type || 'info',
+      onConfirm: config.onConfirm || null,
+      confirmText: config.confirmText || 'OK',
+      cancelText: config.cancelText || 'Cancel',
+      showCancel: config.showCancel !== false,
+      isDangerous: config.isDangerous || false,
+    });
+  };
+
+  const closeAlert = () => {
+    setAlertConfig(prev => ({ ...prev, isOpen: false }));
+  };
+
+  // Specific alert types for common use cases
+  const showInfoAlert = (title, message) => {
+    showAlert({
+      title,
+      message,
+      type: 'info',
+      showCancel: false,
+      confirmText: 'OK'
+    });
+  };
+
+  const showWarningAlert = (title, message, onConfirm) => {
+    showAlert({
+      title,
+      message,
+      type: 'warning',
+      onConfirm,
+      isDangerous: true,
+      confirmText: 'Proceed',
+      cancelText: 'Cancel'
+    });
+  };
+
+  const showSuccessAlert = (title, message) => {
+    showAlert({
+      title,
+      message,
+      type: 'success',
+      showCancel: false,
+      confirmText: 'Great!'
+    });
+  };
+
+  const showErrorAlert = (title, message) => {
+    showAlert({
+      title,
+      message,
+      type: 'error',
+      showCancel: false,
+      confirmText: 'OK'
+    });
+  };
+
+  const handleResetConfirm = () => {
     updateStory({
       title: '',
       editorContent: '',
@@ -326,11 +406,25 @@ const TaleWeaver = () => {
       wordCount: 0,
       createdAt: Date.now(),
     });
-    // Reset manual edit flag
-    setIsManualEdit(false);
-    // Reset title editing state if active
-    setIsEditingTitle(false);
-    setTempTitle('');
+    closeAlert();
+  };
+
+  const handleResetStory = () => {
+    showAlert({
+      title: 'Reset Story',
+      message: 'Reset entire story? This will clear:\n• Story content (canvas)\n• Chat history\n• Setup (characters, genres, themes, setting)\n• Story title\n\nThis action cannot be undone.',
+      type: 'warning',
+      onConfirm: handleResetConfirm,
+      confirmText: 'Reset All',
+      cancelText: 'Cancel',
+      isDangerous: true,
+    });
+  };
+
+  // Reset current story (legacy function - now uses custom alert)
+  const resetCurrentStory = () => {
+    // This function is kept for backward compatibility but now shows custom alert
+    handleResetStory();
   };
 
   // Clean glass theme without neumorphism variables
@@ -397,11 +491,7 @@ const TaleWeaver = () => {
           </button>
           
           <button
-            onClick={() => { 
-              if (window.confirm('Reset entire story? This will clear:\n• Story content (canvas)\n• Chat history\n• Setup (characters, genres, themes, setting)\n• Story title\n\nThis action cannot be undone.')) {
-                resetCurrentStory();
-              }
-            }}
+            onClick={handleResetStory}
             className="glass-button text-sm font-light px-base py-xs text-mono-600 dark:text-mono-400"
             title="Reset entire story including content and setup"
           >
@@ -410,6 +500,16 @@ const TaleWeaver = () => {
               Reset All
             </div>
           </button>
+          
+          <a
+            href="https://github.com/manmohanSinghRaghav/taleweaver"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="glass-button text-sm font-light px-base py-xs text-mono-600 dark:text-mono-400 hover:text-mono-800 dark:hover:text-mono-200 transition-colors"
+            title="View on GitHub"
+          >
+            <FontAwesomeIcon icon={faGithub} className="w-4 h-4" />
+          </a>
           
           <ThemeToggle isDarkMode={isDarkMode} toggleTheme={toggleTheme} />
         </div>
@@ -784,6 +884,20 @@ const TaleWeaver = () => {
           isDarkMode={isDarkMode}
         />
       )}
+
+      {/* Custom Alert Modal */}
+      <CustomAlert
+        isOpen={alertConfig.isOpen}
+        onClose={closeAlert}
+        onConfirm={alertConfig.onConfirm}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        confirmText={alertConfig.confirmText}
+        cancelText={alertConfig.cancelText}
+        showCancel={alertConfig.showCancel}
+        isDangerous={alertConfig.isDangerous}
+      />
     </div>
   );
 };

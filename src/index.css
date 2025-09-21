@@ -516,4 +516,32 @@
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-mono-400 focus-visible:ring-offset-2;
     @apply focus-visible:ring-offset-mono-50 dark:focus-visible:ring-offset-mono-950;
   }
+
+  /* ====== CUSTOM ALERT ANIMATIONS ====== */
+  .animate-scale-in {
+    animation: scaleIn 0.2s ease-out;
+  }
+
+  @keyframes scaleIn {
+    0% {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  /* Small glass button variant for alert close button */
+  .glass-button-sm {
+    @apply p-1 rounded transition-colors duration-200;
+    background: transparent;
+    border: 1px solid transparent;
+  }
+
+  .glass-button-sm:hover {
+    background: var(--vscode-list-hoverBackground);
+    border-color: var(--vscode-input-border);
+  }
 }
